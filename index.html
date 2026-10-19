@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <title>SDG Game Map & Quiz</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: radial-gradient(circle at top left, #e0f7fa, #fce4ec);
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #2c3e50;
+      text-shadow: 1px 1px 2px #aaa;
+      margin-bottom: 5px;
+    }
+    .score-board {
+      text-align: center;
+      font-size: 24px;
+      font-weight: bold;
+      color: #2e7d32;
+      background: #fff;
+      padding: 10px;
+      border-radius: 50px;
+      width: 200px;
+      margin: 10px auto;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .legend {
+      background: #fff;
+      border: 2px solid #ccc;
+      border-radius: 12px;
+      padding: 15px;
+      margin: 20px auto;
+      width: 80%;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    #factions {
+      text-align: center;
+      margin: 20px 0;
+    }
+    #factions button {
+      margin: 8px;
+      padding: 12px 18px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      background: linear-gradient(135deg, #4caf50, #81c784);
+      color: #fff;
+      font-weight: bold;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+      transition: transform 0.2s, box-shadow 0.3s;
+    }
+    #factions button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+    }
+    .quiz-container {
+      display: none;
+      background: #fff;
+      border: 3px solid #4caf50;
+      border-radius: 15px;
+      padding: 20px;
+      margin: 20px auto;
+      width: 80%;
+      max-width: 600px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+      animation: fadeIn 0.4s;
+    }
+    .quiz-question {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 15px;
+      color: #333;
+    }
+    .quiz-options button {
+      display: block;
+      width: 100%;
+      margin: 8px 0;
+      padding: 10px;
+      background: #f5f5f5;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      cursor: pointer;
+      text-align: left;
+      font-size: 16px;
+      transition: background 0.2s;
+    }
+    .quiz-options button:hover {
+      background: #e0e0e0;
+    }
+    .countries-container {
+      text-align: center;
+    }
+    .country {
+      display: inline-block;
+      margin: 10px;
+      padding: 15px;
+      border-radius: 10px;
+      background: #fff;
+      border: 1px solid #ccc;
+      transition: all 0.3s;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .active { background: #d4f0d4; }
+    .invest-world { background: #ebd6ff; }
+    .receive { background: #cce0ff; }
+    .leader { border: 2px solid gold; box-shadow: 0 0 10px gold; }
+    .dimmed { opacity: 0.25; filter: grayscale(50%); }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+<h1>Інтерактивна карта: Цілі сталого розвитку</h1>
+
+<div class="score-board">🏆 Бали: <span id="score">0</span></div>
+
+<div class="legend">
+  <strong>Легенда:</strong><br>
+  💰 — інвестує у себе | 🌍 — інвестує у світ | ❌ — нічого не робить | 🔵 — приймає допомогу | 👑 — лідер
+</div>
+
+<div id="factions">
+  <button onclick="selectFaction('energy')">⚡ Енергетика</button>
+  <button onclick="selectFaction('health')">🏥 Здоров’я</button>
+  <button onclick="selectFaction('education')">📚 Освіта</button>
+  <button onclick="selectFaction('infrastructure')">🏗️ Інфраструктура</button>
+  <button onclick="selectFaction('agro')">🌱 Агросистеми</button>
+  <button onclick="selectFaction('eco')">🍀 Екологія</button>
+  <button onclick="selectFaction('gender')">⚖️ Рівність</button>
+  <button onclick="resetGame()">🏠 Початковий екран</button>
+</div>
+
+<div id="quiz" class="quiz-container">
+  <div class="quiz-question" id="quiz-question">Запитання з'явиться тут...</div>
+  <div class="quiz-options" id="quiz-options"></div>
+</div>
+
+<div id="countries" class="countries-container"></div>
+
+<script>
+const countriesList = [
+  "Китай 🇨🇳","Індія 🇮🇳","Уругвай 🇺🇾","Швеція 🇸🇪","Данія 🇩🇰","Фінляндія 🇫🇮",
+  "США 🇺🇸","Україна 🇺🇦","Кенія 🇰🇪","Єгипет 🇪🇬","Бразилія 🇧🇷","Польща 🇵🇱",
+  "Чехія 🇨🇿","ЦАР 🇨🇫","Південний Судан 🇸🇩","М’янма 🇲🇲","Гаїті 🇭🇹",
+  "Тувалу 🌴","Науру 🌴","Коморські острови 🌴","ЄС 🇪🇺","LDCs 🌴",
+  "Японія 🇯🇵","Канада 🇨🇦","Норвегія 🇳🇴","Нігерія 🇳🇬"
+];
+
+const factions = {
+  energy: {
+    "Китай 🇨🇳": ["💰","🌍"], "Індія 🇮🇳": ["💰","🌍"], "Уругвай 🇺🇾": ["💰","👑"],
+    "Швеція 🇸🇪": ["💰"], "Данія 🇩🇰": ["💰"], "Фінляндія 🇫🇮": ["💰"],
+    "США 🇺🇸": ["❌"], "Україна 🇺🇦": ["💰"], "Норвегія 🇳🇴": ["💰", "🌍"]
+  },
+  health: {
+    "Кенія 🇰🇪": ["💰","🌍","👑"], "Єгипет 🇪🇬": ["💰","🌍"], "Китай 🇨🇳": ["🌍"],
+    "Україна 🇺🇦": ["💰","🔵"], "М’янма 🇲🇲": ["❌"], "Гаїті 🇭🇹": ["❌"], "Нігерія 🇳🇬": ["🔵"]
+  },
+  education: {
+    "Фінляндія 🇫🇮": ["💰","🌍","👑"], "Китай 🇨🇳": ["🌍"], "ЄС 🇪🇺": ["💰","🌍"],
+    "Україна 🇺🇦": ["💰","🔵"], "Південний Судан 🇸🇩": ["❌"], "ЦАР 🇨🇫": ["❌"]
+  },
+  infrastructure: {
+    "Китай 🇨🇳": ["💰","🌍","👑"], "Бразилія 🇧🇷": ["💰"], "Польща 🇵🇱": ["💰"],
+    "Чехія 🇨🇿": ["💰"], "Україна 🇺🇦": ["💰","🔵"], "Тувалу 🌴": ["❌"],
+    "Науру 🌴": ["❌"], "Коморські острови 🌴": ["❌"], "Японія 🇯🇵": ["💰","🌍"]
+  },
+  agro: {
+    "Бразилія 🇧🇷": ["💰","👑"], "ЄС 🇪🇺": ["🌍"], "Україна 🇺🇦": ["💰","🌍"],
+    "ЦАР 🇨🇫": ["❌"], "Південний Судан 🇸🇩": ["❌"], "LDCs 🌴": ["🔵"]
+  },
+  eco: {
+    "Норвегія 🇳🇴": ["💰","🌍","👑"], "Швеція 🇸🇪": ["💰"], "Данія 🇩🇰": ["💰"],
+    "Канада 🇨🇦": ["💰"], "Бразилія 🇧🇷": ["🔵"], "Тувалу 🌴": ["❌"]
+  },
+  gender: {
+    "Швеція 🇸🇪": ["💰","🌍","👑"], "Фінляндія 🇫🇮": ["💰"], "Канада 🇨🇦": ["💰"],
+    "США 🇺🇸": ["💰"], "Нігерія 🇳🇬": ["❌"], "М’янма 🇲🇲": ["❌"]
+  }
+};
+
+const quizQuestions = {
+  energy: [
+    { q: "Яка країна є лідером відновлюваної енергетики в Південній Америці?", a: ["Уругвай 🇺🇾", "Бразилія 🇧🇷", "США 🇺🇸"], right: 0 },
+    { q: "Який статус мають США у фракції Енергетики?", a: ["💰 Інвестує в себе", "❌ Нічого не робить", "👑 Лідер"], right: 1 }
+  ],
+  health: [
+    { q: "Яка африканська країна визначена лідером у сфері охорони здоров'я?", a: ["Єгипет 🇪🇬", "Нігерія 🇳🇬", "Кенія 🇰🇪"], right: 2 }
+  ],
+  education: [
+    { q: "Яка європейська країна інвестує в себе, світ та є лідером в освіті?", a: ["Фінляндія 🇫🇮", "Польща 🇵🇱", "Чехія 🇨🇿"], right: 0 }
+  ],
+  infrastructure: [
+    { q: "Яка азіатська країна є головним інвестором та лідером інфраструктури?", a: ["Японія 🇯🇵", "Китай 🇨🇳", "Індія 🇮🇳"], right: 1 }
+  ],
+  agro: [
+    { q: "Хто є головним лідером агросистем у Південній Америці?", a: ["Уругвай 🇺🇾", "Бразилія 🇧🇷", "Гаїті 🇭🇹"], right: 1 }
+  ],
+  eco: [
+    { q: "Яка скандинавська країна очолює фракцію Екології?", a: ["Норвегія 🇳🇴", "Данія 🇩🇰", "Швеція 🇸🇪"], right: 0 }
+  ],
+  gender: [
+    { q: "Яка країна має статус глобального лідера у сфері гендерної рівності?", a: ["Канада 🇨🇦", "Швеція 🇸🇪", "США 🇺🇸"], right: 1 }
+  ]
+};
+
+let userScore = 0;
+let currentFaction = "";
+
+function renderCountries() {
+  const container = document.getElementById("countries");
+  container.innerHTML = "";
+  countriesList.forEach(c => {
+    const div = document.createElement("div");
+    div.className = "country";
+    div.id = c;
+    div.innerText = c;
+    container.appendChild(div);
+  });
+}
+
+function selectFaction(faction) {
+  currentFaction = faction; 
+  resetGameOnly(); 
+  showQuiz(faction);
+}
+
+function showQuiz(faction) {
+  const quizBox = document.getElementById("quiz");
+  const qList = quizQuestions[faction];
+  
+  if (!qList || qList.length === 0) {
+    quizBox.style.display = "none";
+    return;
+  }
+
+  const randomQuestion = qList[Math.floor(Math.random() * qList.length)];
+  
+  document.getElementById("quiz-question").innerText = randomQuestion.q;
+  const optionsContainer = document.getElementById("quiz-options");
+  optionsContainer.innerHTML = "";
+
+  randomQuestion.a.forEach((answerText, index) => {
+    const btn = document.createElement("button");
+    btn.innerText = answerText;
+    btn.onclick = () => checkAnswer(index, randomQuestion.right, quizBox);
+    optionsContainer.appendChild(btn);
+  });
+
+  quizBox.style.display = "block";
+}
+
+function checkAnswer(selectedIndex, rightIndex, quizBox) {
+  if (selectedIndex === rightIndex) {
+    alert("🎉 Правильно! Карта розблокована. +10 балів.");
+    userScore += 10;
+    highlightFaction(currentFaction); 
+  } else {
+    alert("😢 Неправильно! Спробуй ще раз. -5 балів.");
+    userScore = Math.max(0, userScore - 5);
+    resetGameOnly(); 
+  }
+  document.getElementById("score").innerText = userScore;
+  quizBox.style.display = "none";
+}
+
+function highlightFaction(faction) {
+  const set = factions[faction];
+  
+  document.querySelectorAll(".country").forEach(el => {
+    el.className = "country";
+    el.innerText = el.id;
+    if (!set[el.id]) {
+      el.classList.add("dimmed");
+    }
+  });
+
+  for (let c in set) {
+    const el = document.getElementById(c);
+    if (!el) continue;
+    
+    el.innerText = c + " " + set[c].join(" ");
+    
+    if (set[c].includes("💰")) el.classList.add("active");
+    if (set[c].includes("🌍")) el.classList.add("invest-world");
+    if (set[c].includes("🔵")) el.classList.add("receive");
+    if (set[c].includes("👑")) el.classList.add("leader");
+    if (set[c].includes("❌")) el.classList.add("dimmed");
+  }
+}
+
+function resetGameOnly() {
+  document.querySelectorAll(".country").forEach(el => {
+    el.className = "country";
+    el.innerText = el.id;
+  });
+}
+
+function resetGame() {
+  document.getElementById("quiz").style.display = "none";
+  resetGameOnly();
+}
+
+renderCountries();
+</script>
+
+</body>
+</html>
